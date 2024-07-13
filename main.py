@@ -16,7 +16,6 @@ def colored_print(color, message):
     print(f"{color}{Style.BRIGHT}{message}{Style.RESET_ALL}")
 
 def remove_trailing_commas(json_string):
-    # Remove trailing commas from JSON string
     return re.sub(r',\s*}', '}', json_string)
 
 def load_user_info():
@@ -24,13 +23,10 @@ def load_user_info():
         try:
             with open(USER_INFO_FILE, 'r') as f:
                 content = f.read()
-                # Remove trailing commas before parsing
                 cleaned_content = remove_trailing_commas(content)
                 return json.loads(cleaned_content)
         except json.JSONDecodeError as e:
             colored_print(Fore.RED, f"Error reading user info file: {str(e)}")
-            colored_print(Fore.YELLOW, "Contents of the file (after cleaning):")
-            print(cleaned_content)
             colored_print(Fore.YELLOW, "Would you like to reset the user info? (y/n)")
             if input().lower() == 'y':
                 return {}
@@ -64,6 +60,9 @@ def update_user_info(user_info, new_info):
 
 def parse_ai_response(response):
     try:
+        # Remove the </start_of_turn> tag
+        response = response.replace("</start_of_turn>", "").strip()
+        
         parts = response.split("MEMORY_UPDATE:", 1)
         ai_message = parts[0].strip()
         memory_update = {}
@@ -73,8 +72,6 @@ def parse_ai_response(response):
         return ai_message, memory_update
     except json.JSONDecodeError as e:
         colored_print(Fore.RED, f"Error parsing AI response: {str(e)}")
-        colored_print(Fore.YELLOW, "AI response:")
-        print(response)
         return response, {}
 
 def generate_ai_response(model, prompt, user_info):
@@ -102,6 +99,7 @@ def chat_with_ai(user_info):
     Current user information: {user_info}
     Current date and time: {current_datetime}
     Use the current date and time to provide relevant responses and update memories with timestamps if appropriate.
+    Do not include any tags like </start_of_turn> in your response.
     """
     
     while True:
