@@ -63,10 +63,19 @@ def update_user_info(user_info, new_info):
     return user_info
 
 def parse_ai_response(response):
-    parts = response.split("MEMORY_UPDATE:", 1)
-    ai_message = parts[0].strip()
-    memory_update = json.loads(parts[1]) if len(parts) > 1 else {}
-    return ai_message, memory_update
+    try:
+        parts = response.split("MEMORY_UPDATE:", 1)
+        ai_message = parts[0].strip()
+        memory_update = {}
+        if len(parts) > 1:
+            memory_update_str = parts[1].strip()
+            memory_update = json.loads(memory_update_str)
+        return ai_message, memory_update
+    except json.JSONDecodeError as e:
+        colored_print(Fore.RED, f"Error parsing AI response: {str(e)}")
+        colored_print(Fore.YELLOW, "AI response:")
+        print(response)
+        return response, {}
 
 def generate_ai_response(model, prompt, user_info):
     try:
