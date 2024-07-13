@@ -15,7 +15,7 @@ This AI Chat Application is a Python-based interactive chatbot that uses a local
 ## Requirements
 
 - Python 3.7+
-- Ollama (with a compatible AI model, default is "gemma2")
+- Ollama (with a compatible AI model, default is "llama3")
 - Required Python packages:
   - ollama
   - colorama
@@ -27,7 +27,7 @@ This AI Chat Application is a Python-based interactive chatbot that uses a local
    ```
    pip install ollama colorama
    ```
-3. Ensure Ollama is installed and set up on your system with the "gemma2" model (or modify the `OLLAMA_MODEL` variable in the script to use a different model).
+3. Ensure Ollama is installed and set up on your system with the "llama3" model (or modify the `OLLAMA_MODEL` variable in the script to use a different model).
 
 ## Usage
 

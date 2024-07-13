@@ -9,7 +9,7 @@ from datetime import datetime
 init()
 
 # Configuration
-OLLAMA_MODEL = "gemma2"
+OLLAMA_MODEL = "llama3"
 USER_INFO_FILE = "user_info.json"
 
 def colored_print(color, message):
@@ -55,12 +55,15 @@ def update_user_info(user_info, new_info):
 
     user_info = deep_update(user_info, new_info)
     save_user_info(user_info)
-    colored_print(Fore.YELLOW, "Memory Updated")
+    
+    # Only notify if something other than last_interaction_time is updated
+    if len(new_info) > 1 or "last_interaction_time" not in new_info:
+        colored_print(Fore.YELLOW, "Memory Updated")
+    
     return user_info
 
 def parse_ai_response(response):
     try:
-        # Remove the </start_of_turn> tag
         response = response.replace("</start_of_turn>", "").strip()
         
         parts = response.split("MEMORY_UPDATE:", 1)
@@ -93,9 +96,12 @@ def chat_with_ai(user_info):
     system_prompt = """
     You are an AI assistant capable of remembering important information about the user.
     When you learn something new and important about the user, you should save it to memory.
+    If the user tells you something new, continue the conversation based on that.
     To save information, include a JSON object at the end of your response like this:
     MEMORY_UPDATE: {{"key": "value"}}
     Only include the MEMORY_UPDATE if you have new information to save.
+    Always include the last interaction time in your memory updates like this:
+    MEMORY_UPDATE: {{"last_interaction_time": "YYYY-MM-DD HH:MM:SS", "other_key": "other_value"}}
     Current user information: {user_info}
     Current date and time: {current_datetime}
     Use the current date and time to provide relevant responses and update memories with timestamps if appropriate.
@@ -122,7 +128,7 @@ def main():
     colored_print(Fore.CYAN, "Welcome to the AI Chat Application!")
     colored_print(Fore.CYAN, "Chat naturally with the AI. It will remember important information automatically.")
     colored_print(Fore.CYAN, "The AI is aware of the current date and time for context-aware responses.")
-    colored_print(Fore.CYAN, "You'll be notified when the AI updates its memory about you.")
+    colored_print(Fore.CYAN, "You'll be notified when the AI updates its memory with new information about you.")
     colored_print(Fore.CYAN, "To exit, type 'exit', 'quit', or 'bye'.")
 
     if user_info:
