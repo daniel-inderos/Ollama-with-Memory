@@ -1,0 +1,109 @@
+{
+    "name": "Daniel Eduardo Hasbun Siman",
+    "gender": "male",
+    "weight": "136.2 pounds",
+    "height": "5 feet 6 inches",
+    "date_of_birth": "October 16, 2011",
+    "location": "Tegucigalpa, Honduras",
+    "family": {
+      "younger_sister": {
+        "name": "Frances Emilia Hasbun Siman",
+        "nickname": "Emilia",
+        "date_of_birth": "June 19, 2015"
+      }
+    },
+    "preferences": {
+      "favorite_color": "red",
+      "favorite_school_subject": "computer science",
+      "least_favorite_school_subject": "PE",
+      "favorite_book_series": "Harry Potter",
+      "favorite_movies": ["Ready Player One", "Interstellar"],
+      "favorite_tv_show": "The Big Bang Theory",
+      "favorite_video_game": "Hogwarts Legacy",
+      "favorite_food": "pizza",
+      "favorite_drinks": ["water", "Coca Cola"],
+      "favorite_quote": "It does not do to dwell on dreams and forget to live."
+    },
+    "education": {
+      "grade_level": "Finished 6th grade on May 24, 2024"
+    },
+    "hobbies": ["reading with Kindle", "watching TV shows and movies", "coding"],
+    "achievements": {
+      "exceptional_technology_skills": true,
+      "school_performance": true,
+      "ability_to_understand_complex_topics": true,
+      "learned_HTML_and_CSS_through_YouTube": true,
+      "beat_Hogwarts_Legacy_6_times": true
+    },
+    "challenges": {
+      "staying_focused_on_tasks": true,
+      "PE": true,
+      "Math": "sometimes",
+      "feeling_overwhelmed_by_many_tasks": true,
+      "staying_organized": true
+    },
+    "social": {
+      "best_friend": "Jacobo Elias Handal Facusse",
+      "prefers_indoor_activities": true,
+      "usually_hates_group_projects": true,
+      "balances_schoolwork_hobbies_social_life_easily": true
+    },
+    "technology": {
+      "Meta_Quest_3": true,
+      "Meta_Quest_2": true,
+      "Apple_Vision_Pro": true,
+      "interested_in_VR_experiences": true,
+      "using_Unreal_Engine_for_VR_universe": true
+    },
+    "travel": {
+      "Washington_DC_and_New_York_summer_2023": true,
+      "cruise_to_Bahamas_October_2022": true,
+      "wants_to_travel_worldwide": true
+    },
+    "pets": {
+      "baby_chickens": {
+        "names": ["Jack", "Lucy"],
+        "acquired": "January 2023",
+        "duration": "one year",
+        "reason_for_giving_away": "sister's allergies"
+      }
+    },
+    "self_perception": {
+      "proud_of_technology_skills_and_school_performance": true,
+      "considers_self_creative": true,
+      "dives_into_new_projects": true,
+      "tries_to_solve_problems_independently": true,
+      "relaxes_by_watching_TV_and_resting": true,
+      "driven_by_personal_satisfaction": true
+    },
+    "planning_and_organization": {
+      "plans_activities_in_advance_but_enjoys_spontaneity": true,
+      "prefers_sticking_with_known_preferences": true,
+      "relaxes_on_weekends": true,
+      "goes_to_church_Saturday_nights": true
+    },
+    "interests": {
+      "lightsabers": true
+    },
+    "goals": {
+      "improving_coding_skills": true,
+      "high_quality_gaming_and_PCVR_computer_budget": 2000
+    },
+    "projects": {
+      "YouTube_channel": {
+        "content": "fun fact shorts",
+        "title_style": ["Fun", "Cool"]
+      }
+    },
+    "personal_care": {
+      "CeraVe_Facial_Moisturizing_Lotion": true,
+      "CeraVe_Renewing_SA_Cleanser": true
+    },
+    "fitness": {
+      "concerned_about_exercise_embarrassment": true,
+      "cannot_do_push_up": true,
+      "enjoys_swimming": true,
+      "wears_Apple_Watch_Series_8": true
+    },
+  }
+  
