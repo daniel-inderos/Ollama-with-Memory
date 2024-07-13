@@ -1,6 +1,7 @@
 import ollama
 import json
 import os
+import re
 from colorama import init, Fore, Style
 from datetime import datetime
 
@@ -14,35 +15,29 @@ USER_INFO_FILE = "user_info.json"
 def colored_print(color, message):
     print(f"{color}{Style.BRIGHT}{message}{Style.RESET_ALL}")
 
+def remove_trailing_commas(json_string):
+    # Remove trailing commas from JSON string
+    return re.sub(r',\s*}', '}', json_string)
+
 def load_user_info():
     if os.path.exists(USER_INFO_FILE):
-        with open(USER_INFO_FILE, 'r') as f:
-            return json.load(f)
-    return {
-        "name": "",
-        "gender": "",
-        "weight": "",
-        "height": "",
-        "date_of_birth": "",
-        "location": "",
-        "family": {},
-        "preferences": {},
-        "education": {},
-        "hobbies": [],
-        "achievements": {},
-        "challenges": {},
-        "social": {},
-        "technology": {},
-        "travel": {},
-        "pets": {},
-        "self_perception": {},
-        "planning_and_organization": {},
-        "interests": {},
-        "goals": {},
-        "projects": {},
-        "personal_care": {},
-        "fitness": {}
-    }
+        try:
+            with open(USER_INFO_FILE, 'r') as f:
+                content = f.read()
+                # Remove trailing commas before parsing
+                cleaned_content = remove_trailing_commas(content)
+                return json.loads(cleaned_content)
+        except json.JSONDecodeError as e:
+            colored_print(Fore.RED, f"Error reading user info file: {str(e)}")
+            colored_print(Fore.YELLOW, "Contents of the file (after cleaning):")
+            print(cleaned_content)
+            colored_print(Fore.YELLOW, "Would you like to reset the user info? (y/n)")
+            if input().lower() == 'y':
+                return {}
+            else:
+                colored_print(Fore.RED, "Cannot proceed with corrupted user info. Exiting.")
+                exit(1)
+    return {}
 
 def save_user_info(user_info):
     with open(USER_INFO_FILE, 'w') as f:
@@ -93,9 +88,8 @@ def chat_with_ai(user_info):
     You are an AI assistant capable of remembering important information about the user.
     When you learn something new and important about the user, you should save it to memory.
     To save information, include a JSON object at the end of your response like this:
-    MEMORY_UPDATE: {{"category": {{"key": "value"}}}}
+    MEMORY_UPDATE: {{"key": "value"}}
     Only include the MEMORY_UPDATE if you have new information to save.
-    Use the appropriate categories from the user information structure.
     Current user information: {user_info}
     Current date and time: {current_datetime}
     Use the current date and time to provide relevant responses and update memories with timestamps if appropriate.
@@ -124,7 +118,7 @@ def main():
     colored_print(Fore.CYAN, "You'll be notified when the AI updates its memory about you.")
     colored_print(Fore.CYAN, "To exit, type 'exit', 'quit', or 'bye'.")
 
-    if any(user_info.values()):
+    if user_info:
         colored_print(Fore.MAGENTA, "I remember some things about you. Let's chat!")
     else:
         colored_print(Fore.MAGENTA, "I'm excited to learn about you. Let's start our conversation!")
