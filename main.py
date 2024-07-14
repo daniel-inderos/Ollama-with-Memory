@@ -1,7 +1,10 @@
 import ollama
 import json
 from colorama import init, Fore, Style
-from datetime import datetime
+from datetime import datetime, timedelta
+import logging
+from typing import List, Tuple
+import re
 
 # Initialize colorama for cross-platform colored output
 init()
@@ -9,36 +12,59 @@ init()
 # Configuration
 OLLAMA_MODEL = "llama3"
 MEMORY_FILE = "user_memory.txt"
+LOG_FILE = "ai_chat.log"
 
-def colored_print(color, message):
+# Set up logging
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+def colored_print(color: str, message: str) -> None:
     print(f"{color}{Style.BRIGHT}{message}{Style.RESET_ALL}")
 
-def load_memory():
+def load_memory() -> List[str]:
     try:
         with open(MEMORY_FILE, 'r') as f:
             return f.read().splitlines()
     except FileNotFoundError:
+        logging.warning(f"Memory file not found: {MEMORY_FILE}")
         return []
 
-def save_memory(memories):
+def save_memory(memories: List[str]) -> None:
     with open(MEMORY_FILE, 'w') as f:
         f.write('\n'.join(memories))
 
-def update_memory(memories, new_memory):
+def update_memory(memories: List[str], new_memory: str) -> List[str]:
     memories.append(new_memory)
     save_memory(memories)
     colored_print(Fore.YELLOW, "Memory Updated")
+    logging.info(f"Memory updated: {new_memory}")
     return memories
 
-def remove_memory(memories, keyword):
+def remove_memory(memories: List[str], keyword: str) -> List[str]:
     original_length = len(memories)
     memories = [m for m in memories if keyword.lower() not in m.lower()]
     if len(memories) < original_length:
         save_memory(memories)
         colored_print(Fore.YELLOW, "Memory Removed")
+        logging.info(f"Memory removed with keyword: {keyword}")
     return memories
 
-def parse_ai_response(response):
+def calculate_actual_date(relative_date: str, current_date: datetime) -> str:
+    relative_date = relative_date.lower()
+    if 'tomorrow' in relative_date:
+        return (current_date + timedelta(days=1)).strftime('%Y-%m-%d')
+    elif 'next week' in relative_date:
+        return (current_date + timedelta(weeks=1)).strftime('%Y-%m-%d')
+    elif 'in two days' in relative_date:
+        return (current_date + timedelta(days=2)).strftime('%Y-%m-%d')
+    elif 'in a week' in relative_date:
+        return (current_date + timedelta(weeks=1)).strftime('%Y-%m-%d')
+    elif 'next month' in relative_date:
+        return (current_date + timedelta(days=30)).strftime('%Y-%m-%d')  # Approximation
+    else:
+        return current_date.strftime('%Y-%m-%d')  # Default to current date if unrecognized
+
+def parse_ai_response(response: str, current_date: datetime) -> Tuple[str, str, str]:
     parts = response.split("MEMORY_UPDATE:", 1)
     ai_message = parts[0].strip()
     new_memory = parts[1].strip() if len(parts) > 1 else None
@@ -47,14 +73,28 @@ def parse_ai_response(response):
     ai_message = remove_parts[0].strip()
     remove_keyword = remove_parts[1].strip() if len(remove_parts) > 1 else None
     
+    if new_memory:
+        # Extract only the first sentence of the memory update
+        new_memory = re.split(r'(?<=[.!?])\s', new_memory)[0]
+        
+        # Check if the new memory contains a relative date and update it
+        date_pattern = r'\b(tomorrow|next week|in two days|in a week|next month)\b'
+        matches = re.findall(date_pattern, new_memory, re.IGNORECASE)
+        for match in matches:
+            actual_date = calculate_actual_date(match, current_date)
+            new_memory = re.sub(r'\b' + re.escape(match) + r'\b', actual_date, new_memory, flags=re.IGNORECASE)
+        
+        # Remove any remaining placeholders
+        new_memory = re.sub(r'\[calculated date, e\.g\.,.*?\]', '', new_memory).strip()
+    
     return ai_message, new_memory, remove_keyword
 
-def generate_ai_response(model, prompt, memories):
+def generate_ai_response(model: str, prompt: str, memories: List[str], current_date: datetime) -> Tuple[str, List[str]]:
     try:
         response = ollama.generate(model=model, prompt=prompt)
         ai_response = response['response'].strip()
         
-        ai_message, new_memory, remove_keyword = parse_ai_response(ai_response)
+        ai_message, new_memory, remove_keyword = parse_ai_response(ai_response, current_date)
         
         if remove_keyword:
             memories = remove_memory(memories, remove_keyword)
@@ -64,31 +104,37 @@ def generate_ai_response(model, prompt, memories):
         
         return ai_message, memories
     except Exception as e:
-        colored_print(Fore.RED, f"Error in generate_ai_response: {str(e)}")
+        error_msg = f"Error in generate_ai_response: {str(e)}"
+        colored_print(Fore.RED, error_msg)
+        logging.error(error_msg)
         return "I apologize, but I encountered an error while processing your request.", memories
 
-def chat_with_ai(memories):
+def chat_with_ai(memories: List[str]) -> None:
     system_prompt = """
-    You are an AI assistant with a memory of important information about the user.
-    Key points:
-    1. Prioritize recent information in your responses.
-    2. If the user mentions something new or exciting, focus on that in your reply.
-    3. Use the stored memories to provide context-aware and personalized responses.
-    4. If you're unsure about something, ask for clarification instead of making assumptions.
-    5. To save a new memory, include it at the end of your response like this:
-       MEMORY_UPDATE: [The new memory as a single sentence]
-    6. Only include MEMORY_UPDATE if you have important new information to save.
-    7. If the user asks you to forget specific information, include the keyword at the end of your response like this:
-       MEMORY_REMOVE: [keyword]
-    8. Do not include any tags like </start_of_turn> in your response.
-    9. If the user gives an update on information, for example: weight, then remove the old piece of info and replace it with the new piece information.
+    You are an AI assistant with a memory of important information about the user. Your primary goal is to provide personalized and context-aware responses based on this memory.
 
-    Current memories:
+    Instructions:
+    1. Always reference and use the stored memories to personalize your replies. If a memory is relevant to the current conversation, explicitly mention it.
+    2. If you're unsure about something or need more information, ask for clarification. Do not make assumptions.
+    3. After each of your responses, assess if you've learned any important new information about the user. If so, add a new memory using this format:
+       MEMORY_UPDATE: [New memory as a single, concise sentence]
+    4. If the user asks you to forget specific information, acknowledge this and include the following at the end of your response:
+       MEMORY_REMOVE: [Specific keyword or phrase to be removed]
+    5. If the user provides information that updates or contradicts an existing memory, update it by removing the old information and adding the new one.
+    6. Do not use any XML-like tags (e.g., </start_of_turn>) in your responses.
+    7. Always be aware of the current date and time provided, and use this information to give timely and relevant responses.
+    8. When the user mentions a relative date (e.g., "tomorrow," "next week," "in two days"), evaluate if the event or information associated with this date is important. If it is, include the relative date term in the memory update. The system will automatically convert it to an actual date. For example:
+       User: "I have an important presentation tomorrow."
+       You: "I understand you have an important presentation tomorrow. I'll make a note of that."
+       MEMORY_UPDATE: User has an important presentation tomorrow.
+    9. Keep memory updates brief and focused on the key information. Do not include additional conversational text or questions in the MEMORY_UPDATE.
+
+    Current user memories:
     {memories}
 
     Current date and time: {current_datetime}
 
-    Respond naturally and engagingly, focusing on what the user is currently discussing.
+    Respond naturally and engagingly, focusing on the current topic of discussion while leveraging past information when relevant. Your responses should clearly demonstrate the use of memories and adherence to these instructions.
     """
     
     while True:
@@ -96,16 +142,16 @@ def chat_with_ai(memories):
         if user_input.lower() in ['exit', 'quit', 'bye']:
             break
 
-        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_datetime = datetime.now()
         prompt = system_prompt.format(
             memories='\n'.join(memories),
-            current_datetime=current_datetime
+            current_datetime=current_datetime.strftime("%Y-%m-%d %H:%M:%S")
         )
         prompt += f"\n\nUser: {user_input}\nAI:"
-        ai_response, memories = generate_ai_response(OLLAMA_MODEL, prompt, memories)
+        ai_response, memories = generate_ai_response(OLLAMA_MODEL, prompt, memories, current_datetime)
         colored_print(Fore.CYAN, f"AI: {ai_response}")
 
-def main():
+def main() -> None:
     memories = load_memory()
     
     colored_print(Fore.CYAN, "Welcome to the AI Chat Application!")
